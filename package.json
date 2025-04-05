@@ -1,0 +1,23 @@
+{
+  "name": "zora-tg",
+  "version": "1.0.0",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "dev": "nodemon -x node --inspect index.js --ext js",
+    "start": "node index.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "description": "",
+  "dependencies": {
+    "@roziscoding/grammy-autoquote": "^2.0.8",
+    "@zoralabs/coins-sdk": "^0.0.3",
+    "dotenv": "^16.4.7",
+    "grammy": "^1.35.1"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.9"
+  }
+}
