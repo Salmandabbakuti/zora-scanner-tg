@@ -21,6 +21,12 @@ const formatTokenAmount = (amount, decimals = 18) => {
   return formattedAmount.replace(/\.?0+$/, "");
 };
 
+bot.command("start", (ctx) =>
+  ctx.reply(
+    "👋 Welcome to the Zora Pulse Bot! This bot provides information about various coins insights and zora profiles on Base mainnet. Try /help to see available commands."
+  )
+);
+
 // Handle the /ping command.
 bot.command("ping", (ctx) => {
   console.log("Got a /ping command!");
@@ -33,7 +39,10 @@ bot.command("help", (ctx) => {
   console.log("Got a /help command!");
   // Send a message to the chat.
   ctx.reply(
-    "Available commands:\n" +
+    "Hey there👋, Welcome to the Zora Pulse Bot!\n" +
+      "This bot provides information about various coins insights and zora profiles on Base mainnet.\n" + // corrected "insigths" to "insights"
+      "\n" +
+      "Here are some commands you can use:\n" +
       "/help - Show this help message\n" +
       "/ping - Check if the bot is running\n" +
       "/topgainers - Show top gainers\n" +

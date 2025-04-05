@@ -7,6 +7,10 @@ const setCommands = async () => {
   try {
     await bot.api.setMyCommands([
       {
+        command: "start",
+        description: "Start the bot and display welcome message"
+      },
+      {
         command: "help",
         description: "Display available commands and their usage"
       },
