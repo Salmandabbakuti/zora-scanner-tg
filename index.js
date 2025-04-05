@@ -11,8 +11,10 @@ const {
   getProfileBalances
 } = require("@zoralabs/coins-sdk");
 const { formatUnits } = require("viem");
+const express = require("express");
 require("dotenv").config();
 
+const app = express();
 const bot = new Bot(process.env.TELEGRAM_BOT_TOKEN);
 bot.use(autoQuote());
 
@@ -493,4 +495,17 @@ bot.start({
   onStart: (botInfo) => {
     console.info(`Bot @${botInfo.username} is up and running!`);
   }
+});
+
+app.get("/", (req, res) => {
+  res.send("Zora Pulse Bot is up and running!");
+});
+
+app.get("/health", (req, res) => {
+  res.status(200).send("OK");
+});
+
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => {
+  console.log(`Server is listening at http://localhost:${PORT}`);
 });
