@@ -5,19 +5,21 @@ const {
   getCoinsTopVolume24h,
   getCoinsMostValuable,
   getCoinsNew,
-  getCoinsLastTraded
+  getCoinsLastTraded,
+  getCoin,
+  getProfile,
+  getProfileBalances
 } = require("@zoralabs/coins-sdk");
+const { formatUnits } = require("viem");
 require("dotenv").config();
 
 const bot = new Bot(process.env.TELEGRAM_BOT_TOKEN);
 bot.use(autoQuote());
 
-// Start the bot.
-bot.start({
-  onStart: (botInfo) => {
-    console.info(`Bot @${botInfo.username} is up and running!`);
-  }
-});
+const formatTokenAmount = (amount, decimals = 18) => {
+  const formattedAmount = formatUnits(BigInt(amount), decimals);
+  return formattedAmount.replace(/\.?0+$/, "");
+};
 
 // Handle the /ping command.
 bot.command("ping", (ctx) => {
@@ -31,7 +33,17 @@ bot.command("help", (ctx) => {
   console.log("Got a /help command!");
   // Send a message to the chat.
   ctx.reply(
-    "Available commands:\n/ping - Check if the bot is responsive\n/help - Display this help message"
+    "Available commands:\n" +
+      "/help - Show this help message\n" +
+      "/ping - Check if the bot is running\n" +
+      "/topgainers - Show top gainers\n" +
+      "/topvolume - Show top coins by volume\n" +
+      "/mostvaluable - Show most valuable coins\n" +
+      "/newcoins - Show new coins\n" +
+      "/lasttraded - Show last traded coins\n" +
+      "/coin <address> - Get coin details\n" +
+      "/profile <address/handle> - Get profile details\n" +
+      "/balances <address/handle> - Get profile token balances\n"
   );
 });
 
@@ -66,7 +78,7 @@ bot.command("topgainers", async (ctx) => {
     //   );
     // }
     ctx.reply(
-      `Top Gainers:\n${tokens
+      `Top Gainers:\n\n${tokens
         ?.map((coin, index) => {
           const percentChange = coin.marketCapDelta24h
             ? `${parseFloat(coin.marketCapDelta24h).toFixed(2)}%`
@@ -95,7 +107,7 @@ bot.command("topvolume", async (ctx) => {
     });
     const tokens = response.data?.exploreList?.edges?.map((edge) => edge.node);
 
-    console.log(`Showing top ${tokens?.length} volume:`);
+    console.log(`Showing top ${tokens?.length} tokens by volume:`);
 
     tokens?.forEach((coin, index) => {
       const percentChange = coin.marketCapDelta24h
@@ -118,7 +130,7 @@ bot.command("topvolume", async (ctx) => {
     //   );
     // }
     ctx.reply(
-      `Top Volume:\n${tokens
+      `Top coins by volume:\n\n${tokens
         ?.map((coin, index) => {
           const percentChange = coin.marketCapDelta24h
             ? `${parseFloat(coin.marketCapDelta24h).toFixed(2)}%`
@@ -127,7 +139,9 @@ bot.command("topvolume", async (ctx) => {
             coin.symbol
           })\n   24h Change: ${percentChange}\n   Market Cap: ${
             coin.marketCap
-          }\n   Volume 24h: ${coin.volume24h}`;
+          }\n   Volume 24h: ${coin.volume24h}\n   Holders: ${
+            coin.uniqueHolders
+          }\n   Created: ${new Date(coin.createdAt || "").toLocaleString()}`;
         })
         .join("\n-----------------------------------\n")}`
     );
@@ -169,7 +183,7 @@ bot.command("mostvaluable", async (ctx) => {
     //   );
     // }
     ctx.reply(
-      `Top Valuable:\n${tokens
+      `Most valuable coins by market cap:\n\n${tokens
         ?.map((coin, index) => {
           const percentChange = coin.marketCapDelta24h
             ? `${parseFloat(coin.marketCapDelta24h).toFixed(2)}%`
@@ -189,15 +203,15 @@ bot.command("mostvaluable", async (ctx) => {
 });
 
 // Handle the /new command.
-bot.command("new", async (ctx) => {
-  console.log("Got a /new command!");
+bot.command("newcoins", async (ctx) => {
+  console.log("Got a /newcoins command!");
   try {
     const response = await getCoinsNew({
       count: 10
     });
     const tokens = response.data?.exploreList?.edges?.map((edge) => edge.node);
 
-    console.log(`Showing top ${tokens?.length} new:`);
+    console.log(`Showing latest ${tokens?.length} new coins:`);
 
     tokens?.forEach((coin, index) => {
       const percentChange = coin.marketCapDelta24h
@@ -213,7 +227,6 @@ bot.command("new", async (ctx) => {
       console.log(`   Volume 24h: ${coin.volume24h}`);
       console.log(`   Created: ${formattedDate}`);
       console.log(`   Creator: ${coin.creatorAddress}`);
-      console.log(`   Market Cap: ${coin.marketCap}`);
       console.log("-----------------------------------");
     });
 
@@ -225,7 +238,7 @@ bot.command("new", async (ctx) => {
     //   );
     // }
     ctx.reply(
-      `New:\n${tokens
+      `New Coins:\n\n${tokens
         ?.map((coin, index) => {
           const percentChange = coin.marketCapDelta24h
             ? `${parseFloat(coin.marketCapDelta24h).toFixed(2)}%`
@@ -234,13 +247,15 @@ bot.command("new", async (ctx) => {
             coin.symbol
           })\n   24h Change: ${percentChange}\n   Market Cap: ${
             coin.marketCap
-          }\n   Volume 24h: ${coin.volume24h}`;
+          }\n   Volume 24h: ${coin.volume24h}\n   Created: ${new Date(
+            coin.createdAt || ""
+          ).toLocaleString()}\n   Creator: ${coin.creatorAddress}`;
         })
         .join("\n-----------------------------------\n")}`
     );
   } catch (error) {
     console.error("Error fetching new:", error);
-    ctx.reply("Sorry, I couldn't fetch the new at the moment.");
+    ctx.reply("Sorry, I couldn't fetch the new coins at the moment.");
   }
 });
 
@@ -253,13 +268,14 @@ bot.command("lasttraded", async (ctx) => {
       count: 10
     });
     const tokens = response.data?.exploreList?.edges?.map((edge) => edge.node);
-    const creationDate = new Date(tokens?.createdAt || "");
-    const formattedDate = creationDate.toLocaleString();
     console.log(`Showing top ${tokens?.length} last traded:`);
     tokens?.forEach((coin, index) => {
       const percentChange = coin.marketCapDelta24h
         ? `${parseFloat(coin.marketCapDelta24h).toFixed(2)}%`
         : "N/A";
+
+      const creationDate = new Date(coin.createdAt || "");
+      const formattedDate = creationDate.toLocaleString();
 
       console.log(`${index + 1}. ${coin.name} (${coin.symbol})`);
       console.log(`   24h Change: ${percentChange}`);
@@ -278,7 +294,7 @@ bot.command("lasttraded", async (ctx) => {
     // }
 
     ctx.reply(
-      `Last Traded:\n${tokens
+      `Last traded coins:\n\n${tokens
         ?.map((coin, index) => {
           const percentChange = coin.marketCapDelta24h
             ? `${parseFloat(coin.marketCapDelta24h).toFixed(2)}%`
@@ -294,5 +310,178 @@ bot.command("lasttraded", async (ctx) => {
   } catch (error) {
     console.error("Error fetching last traded:", error);
     ctx.reply("Sorry, I couldn't fetch the last traded at the moment.");
+  }
+});
+
+// Handle the /coin command.
+bot.command("coin", async (ctx) => {
+  console.log("Got a /coin command!");
+  const coinAddress = ctx.match;
+  if (!coinAddress) {
+    ctx.reply("Please provide a coin address.");
+    return;
+  }
+  try {
+    const response = await getCoin({
+      address: coinAddress,
+      chain: 8453 // 8453 is the chain ID for Base
+    });
+    const coin = response.data?.zora20Token;
+    if (!coin) {
+      ctx.reply("Coin not found with the provided address.");
+      console.log("Coin not found with the provided address.");
+      return;
+    }
+
+    if (coin) {
+      console.log("Coin Details:");
+      console.log("- Name:", coin.name);
+      console.log("- Symbol:", coin.symbol);
+      console.log("- Description:", coin.description);
+      console.log("- Total Supply:", coin.totalSupply);
+      console.log("- Market Cap:", coin.marketCap);
+      console.log("- 24h Volume:", coin.volume24h);
+      console.log("- Creator:", coin.creatorAddress);
+      console.log("- Created At:", coin.createdAt);
+      console.log("- Unique Holders:", coin.uniqueHolders);
+
+      // Access media if available
+      if (coin.media?.previewImage) {
+        console.log("- Preview Image:", coin.media.previewImage);
+      }
+
+      console.log(`Showing details for ${coin.name} (${coin.symbol}):`);
+
+      console.log(`   Market Cap: ${coin.marketCap}`);
+      console.log(`   Volume 24h: ${coin.volume24h}`);
+      console.log(`   Holders: ${coin.uniqueHolders}`);
+      console.log(`   Created At: ${coin.createdAt}`);
+      console.log(`   Creator Address: ${coin.creatorAddress}`);
+      console.log("-----------------------------------");
+
+      ctx.reply(
+        `Coin Details:
+        ${coin.name} (${coin.symbol})
+           Market Cap: ${coin.marketCap}
+           Volume 24h: ${coin.volume24h}
+           Holders: ${coin.uniqueHolders}
+           Created At: ${coin.createdAt}
+           Creator Address: ${coin.creatorAddress}`
+      );
+    }
+  } catch (error) {
+    console.error("Error fetching coin details:", error);
+    ctx.reply("Sorry, I couldn't fetch the coin details at the moment.");
+  }
+});
+
+// Handle the /profile command.
+
+bot.command("profile", async (ctx) => {
+  console.log("Got a /profile command!");
+
+  const identifier = ctx.match;
+  if (!identifier) {
+    ctx.reply("Please provide a wallet address or zora handle.");
+    return;
+  }
+  try {
+    const response = await getProfile({
+      identifier
+    });
+    // TODO: fix profile graphql types
+    const profile = response?.data?.profile;
+    console.log("profile", profile);
+
+    if (profile) {
+      console.log("Profile Details:");
+      console.log("- Handle:", profile.handle);
+      console.log("- Display Name:", profile.displayName);
+      console.log("- Bio:", profile.bio);
+
+      // Access profile image if available
+      if (profile.avatar?.medium) {
+        console.log("- Profile Image:", profile.avatar.medium);
+      }
+
+      // Access social links if available
+      if (profile?.linkedWallets && profile?.linkedWallets?.edges?.length) {
+        console.log("Linked Wallets:");
+        profile?.linkedWallets?.edges?.forEach((link) => {
+          console.log(
+            `- ${link?.node?.walletType}: ${link?.node?.walletAddress}`
+          );
+        });
+      }
+      ctx.reply(
+        `Profile Details for ${identifier}\nHandle: ${
+          profile.handle
+        }\nDisplay Name: ${profile.displayName}\nBio: ${
+          profile.bio || "N/A"
+        } \n Public Wallet: ${profile?.publicWallet?.walletAddress || "N/A"}`
+      );
+    } else {
+      console.log("Profile not found or user has not set up a profile");
+      ctx.reply("Profile not found or user has not set up a profile.");
+    }
+  } catch (error) {
+    console.error("Error fetching profile details:", error);
+    ctx.reply("Sorry, I couldn't fetch the profile details at the moment.");
+  }
+});
+
+// Handle the /balances command.
+
+bot.command("balances", async (ctx) => {
+  console.log("Got a /balances command!");
+
+  const identifier = ctx.match;
+  if (!identifier) {
+    ctx.reply("Please provide a wallet address or zora handle.");
+    return;
+  }
+  try {
+    const response = await getProfileBalances({
+      identifier,
+      count: 10
+    });
+    const profile = response?.data?.profile;
+    if (!profile) {
+      ctx.reply("Profile not found or user has not set up a profile.");
+      return;
+    }
+    console.log("profile", profile);
+    console.log(`Found ${profile.coinBalances?.count || 0} coin balances`);
+    const balances = profile.coinBalances?.edges?.map((edge) => edge.node);
+    balances?.forEach((balance, index) => {
+      console.log(`Balance ${index + 1}:`, balance);
+      // remove prefix zeros from balance
+      // format the token amount for better readability
+      console.log(
+        `- ${balance?.coin?.name} (${
+          balance?.coin?.symbol
+        }): ${formatTokenAmount(balance?.balance)}`
+      );
+    });
+
+    ctx.reply(
+      `Balances of ${identifier}\n${balances
+        ?.map((balance, i) => {
+          return `${i + 1}. ${balance?.coin?.name} (${
+            balance?.coin?.symbol
+          }): ${formatTokenAmount(balance?.balance)}`;
+        })
+        .join("\n")}`
+    );
+  } catch (error) {
+    console.error("Error fetching profile balances:", error);
+    ctx.reply("Sorry, I couldn't fetch the profile balances at the moment.");
+  }
+});
+
+// Start the bot.
+bot.start({
+  onStart: (botInfo) => {
+    console.info(`Bot @${botInfo.username} is up and running!`);
   }
 });
