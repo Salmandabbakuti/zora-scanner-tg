@@ -6,7 +6,7 @@ Zora Scanner Telegram Bot is a lightweight and fast Telegram bot built with gram
 
 This bot provides users with easy-to-access information about:
 
-- Top performing coins(based on volume and price changes)
+- Top performing coins (based on volume and price changes)
 
 - Most traded assets
 
@@ -16,8 +16,8 @@ This bot provides users with easy-to-access information about:
 
 - Last traded and uniquely traded coins
 
-- Hourly updates on top gainers, top volume, most valuable coins, and new coins are sent to the Telegram channel.
-It's designed to help users quickly monitor on-chain activity, discover new opportunities, and track wallet performance — all without leaving Telegram.
+- Hourly updates on top gainers, top volume, most valuable coins, and newly launched coins are sent to the Telegram channel.
+  It's designed to help users quickly monitor on-chain activity, discover new opportunities, and track wallet performance — all without leaving Telegram.
 
 Whether you're a trader, analyst, or just curious about what's trending on Zora, this bot gives you the edge with on-demand insights in seconds.
 
@@ -39,7 +39,7 @@ Whether you're a trader, analyst, or just curious about what's trending on Zora,
 - `/profile <address/zora handle>` – Show profile data of an address or Zora handle.
 - `/balances <address/zora handle>` – Show list of coin balances of an address or Zora handle.
 
-Hourly updates on top gainers, top volume, and most valuable, new coins are sent to the channel [@ZoraPulse](https://t.me/+4ocUg0iJh1sxY2E9).
+Hourly updates on top gainers, top volume, most valuable coins, and newly launched coins are sent to the channel [@ZoraPulse](https://t.me/+4ocUg0iJh1sxY2E9).
 
 ## Getting Started
 
