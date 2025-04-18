@@ -11,12 +11,21 @@ const {
   getProfileBalances
 } = require("@zoralabs/coins-sdk");
 const { formatUnits } = require("viem");
+const cron = require("node-cron");
+const dayjs = require("dayjs");
+const relativeTime = require("dayjs/plugin/relativeTime");
+const utc = require("dayjs/plugin/utc");
 const express = require("express");
 require("dotenv").config();
+
+dayjs.extend(relativeTime);
+dayjs.extend(utc);
 
 const app = express();
 const bot = new Bot(process.env.TELEGRAM_BOT_TOKEN);
 bot.use(autoQuote());
+
+const TELEGRAM_CHANNEL_ID = process.env.TELEGRAM_CHANNEL_ID;
 
 const formatTokenAmount = (amount, decimals = 18) => {
   const formattedAmount = formatUnits(BigInt(amount), decimals);
@@ -27,6 +36,98 @@ bot.command("start", (ctx) =>
   ctx.reply(
     "👋 Welcome to the Zora Pulse Bot! This bot provides information about various coins insights and zora profiles on Base mainnet. Try /help to see available commands."
   )
+);
+
+cron.schedule(
+  "0 * * * *",
+  async () => {
+    console.log("Running hourly market update...");
+
+    try {
+      const [gainers, topVolume, mostValuable, newest, lastTraded] =
+        await Promise.all([
+          getCoinsTopGainers({ count: 5 }),
+          getCoinsTopVolume24h({ count: 5 }),
+          getCoinsMostValuable({ count: 5 }),
+          getCoinsNew({ count: 5 }),
+          getCoinsLastTraded({ count: 5 })
+        ]);
+
+      const formattedGainers = gainers.data?.exploreList?.edges?.map((e, i) => {
+        const c = e.node;
+        const change = c.marketCapDelta24h
+          ? `${parseFloat(c.marketCapDelta24h).toFixed(2)}%`
+          : "N/A";
+        return `${i + 1}. ${c.name} (${c.symbol}) ${change}`;
+      });
+
+      const formattedTopVolumes = topVolume.data?.exploreList?.edges?.map(
+        (e, i) => {
+          const c = e.node;
+          return `${i + 1}. ${c.name} (${c.symbol}) $${parseFloat(
+            c.volume24h
+          ).toLocaleString()}`;
+        }
+      );
+
+      const formattedMostValuables = mostValuable.data?.exploreList?.edges?.map(
+        (e, i) => {
+          const c = e.node;
+          return `${i + 1}. ${c.name} (${c.symbol}) $${parseFloat(
+            c.marketCap
+          ).toLocaleString()} MCap`;
+        }
+      );
+
+      const formattedNewest = newest.data?.exploreList?.edges?.map((e, i) => {
+        const c = e.node;
+        return `${i + 1}. ${c.name} (${c.symbol}) $${parseFloat(
+          c.marketCap
+        ).toLocaleString()} MCap - ${dayjs(c.createdAt).fromNow()}`;
+      });
+
+      const formattedLastTraded = lastTraded.data?.exploreList?.edges?.map(
+        (e, i) => {
+          const c = e.node;
+          const change = c.marketCapDelta24h
+            ? `${parseFloat(c.marketCapDelta24h).toFixed(2)}%`
+            : "N/A";
+          return `${i + 1}. ${c.name} (${c.symbol}) $${parseFloat(
+            c.marketCap
+          ).toLocaleString()} MCap ${change}`;
+        }
+      );
+
+      const message = `📊 *Hourly Market Update*\n_Updated: ${dayjs
+        .utc()
+        .format("D MMM YY, h:mm A [UTC]")}_
+
+🚀 *Top Gainers*  
+${formattedGainers?.join("\n") || "No data available"}
+
+💸 *Top Volume*  
+${formattedTopVolumes?.join("\n") || "No data available"}
+
+🏆 *Most Valuable*  
+${formattedMostValuables?.join("\n") || "No data available"}
+
+🆕 *New Coins*  
+${formattedNewest?.join("\n") || "No data available"}
+
+⏱️ *Last Traded*  
+${formattedLastTraded?.join("\n") || "No data available"}
+`;
+
+      await bot.api.sendMessage(TELEGRAM_CHANNEL_ID, message, {
+        parse_mode: "Markdown"
+      });
+
+      console.log("Hourly market update sent to channel.");
+    } catch (err) {
+      console.error("❌ Error sending hourly market update:", err);
+    }
+  },
+  { timezone: "America/New_York" }
 );
 
 // Handle the /ping command.
@@ -488,6 +589,31 @@ bot.command("balances", async (ctx) => {
     console.error("Error fetching profile balances:", error);
     ctx.reply("Sorry, I couldn't fetch the profile balances at the moment.");
   }
+});
+
+bot.inlineQuery(/help/, async (ctx) => {
+  console.log("Received help inline query");
+  await ctx
+    .answerInlineQuery([
+      {
+        type: "article",
+        id: "help",
+        title: "Try one of these:",
+        description: "topgainers | topvolume | new | valuable | traded",
+        input_message_content: {
+          message_text:
+            "Try one of these:\n" +
+            "topgainers | topvolume | new | valuable | traded\n" +
+            "You can also use /help to see all commands."
+        }
+      }
+    ])
+    .then(() => {
+      console.log("Answered inline query successfully");
+    })
+    .catch((err) => {
+      console.error("Error answering inline query:", err);
+    });
 });
 
 // Start the bot.
