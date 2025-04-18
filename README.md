@@ -16,6 +16,8 @@ This bot provides users with easy-to-access information about:
 
 - Last traded and uniquely traded coins
 
+- Hourly updates on top gainers, top volume, and most valuable, new coins are sent to the telegram channel
+
 It's designed to help users quickly monitor on-chain activity, discover new opportunities, and track wallet performance — all without leaving Telegram.
 
 Whether you're a trader, analyst, or just curious about what's trending on Zora, this bot gives you the edge with on-demand insights in seconds.
