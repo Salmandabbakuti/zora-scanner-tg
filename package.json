@@ -1,6 +1,6 @@
 {
   "name": "zora-tg",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
@@ -14,9 +14,11 @@
   "dependencies": {
     "@roziscoding/grammy-autoquote": "^2.0.8",
     "@zoralabs/coins-sdk": "^0.0.3",
+    "dayjs": "^1.11.13",
     "dotenv": "^16.4.7",
     "express": "^5.1.0",
     "grammy": "^1.35.1",
+    "node-cron": "^3.0.3",
     "viem": "^2.25.0"
   },
   "devDependencies": {
