@@ -13,12 +13,12 @@ const {
 const { formatUnits } = require("viem");
 const cron = require("node-cron");
 const dayjs = require("dayjs");
-const relatviteTime = require("dayjs/plugin/relativeTime");
+const relativeTime = require("dayjs/plugin/relativeTime");
 const utc = require("dayjs/plugin/utc");
 const express = require("express");
 require("dotenv").config();
 
-dayjs.extend(relatviteTime);
+dayjs.extend(relativeTime);
 dayjs.extend(utc);
 
 const app = express();
