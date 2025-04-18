@@ -38,86 +38,97 @@ bot.command("start", (ctx) =>
   )
 );
 
-cron.schedule("0 * * * *", async () => {
-  console.log("Running hourly market update...");
+cron.schedule(
+  "0 * * * *",
+  async () => {
+    console.log("Running hourly market update...");
 
-  try {
-    const [gainers, volume, valuable, newest, traded] = await Promise.all([
-      getCoinsTopGainers({ count: 5 }),
-      getCoinsTopVolume24h({ count: 5 }),
-      getCoinsMostValuable({ count: 5 }),
-      getCoinsNew({ count: 5 }),
-      getCoinsLastTraded({ count: 5 })
-    ]);
+    try {
+      const [gainers, topVolume, mostValuable, newest, lastTraded] =
+        await Promise.all([
+          getCoinsTopGainers({ count: 5 }),
+          getCoinsTopVolume24h({ count: 5 }),
+          getCoinsMostValuable({ count: 5 }),
+          getCoinsNew({ count: 5 }),
+          getCoinsLastTraded({ count: 5 })
+        ]);
 
-    const formatGainers = gainers.data?.exploreList?.edges?.map((e, i) => {
-      const c = e.node;
-      const change = c.marketCapDelta24h
-        ? `${parseFloat(c.marketCapDelta24h).toFixed(2)}%`
-        : "N/A";
-      return `${i + 1}. ${c.name} (${c.symbol}) ${change}`;
-    });
+      const formattedGainers = gainers.data?.exploreList?.edges?.map((e, i) => {
+        const c = e.node;
+        const change = c.marketCapDelta24h
+          ? `${parseFloat(c.marketCapDelta24h).toFixed(2)}%`
+          : "N/A";
+        return `${i + 1}. ${c.name} (${c.symbol}) ${change}`;
+      });
 
-    const formatVolume = volume.data?.exploreList?.edges?.map((e, i) => {
-      const c = e.node;
-      return `${i + 1}. ${c.name} (${c.symbol}) $${parseFloat(
-        c.volume24h
-      ).toLocaleString()}`;
-    });
+      const formattedTopVolumes = topVolume.data?.exploreList?.edges?.map(
+        (e, i) => {
+          const c = e.node;
+          return `${i + 1}. ${c.name} (${c.symbol}) $${parseFloat(
+            c.volume24h
+          ).toLocaleString()}`;
+        }
+      );
 
-    const formatValuable = valuable.data?.exploreList?.edges?.map((e, i) => {
-      const c = e.node;
-      return `${i + 1}. ${c.name} (${c.symbol}) $${parseFloat(
-        c.marketCap
-      ).toLocaleString()} MCap`;
-    });
+      const formattedMostValuables = mostValuable.data?.exploreList?.edges?.map(
+        (e, i) => {
+          const c = e.node;
+          return `${i + 1}. ${c.name} (${c.symbol}) $${parseFloat(
+            c.marketCap
+          ).toLocaleString()} MCap`;
+        }
+      );
 
-    const formatNew = newest.data?.exploreList?.edges?.map((e, i) => {
-      const c = e.node;
-      return `${i + 1}. ${c.name} (${c.symbol}) $${parseFloat(
-        c.marketCap
-      ).toLocaleString()} MCap - ${dayjs(c.createdAt).fromNow()}`;
-    });
+      const formattedNewest = newest.data?.exploreList?.edges?.map((e, i) => {
+        const c = e.node;
+        return `${i + 1}. ${c.name} (${c.symbol}) $${parseFloat(
+          c.marketCap
+        ).toLocaleString()} MCap - ${dayjs(c.createdAt).fromNow()}`;
+      });
 
-    const formatTraded = traded.data?.exploreList?.edges?.map((e, i) => {
-      const c = e.node;
-      const change = c.marketCapDelta24h
-        ? `${parseFloat(c.marketCapDelta24h).toFixed(2)}%`
-        : "N/A";
-      return `${i + 1}. ${c.name} (${c.symbol}) $${parseFloat(
-        c.marketCap
-      ).toLocaleString()} MCap ${change}`;
-    });
+      const formattedLastTraded = lastTraded.data?.exploreList?.edges?.map(
+        (e, i) => {
+          const c = e.node;
+          const change = c.marketCapDelta24h
+            ? `${parseFloat(c.marketCapDelta24h).toFixed(2)}%`
+            : "N/A";
+          return `${i + 1}. ${c.name} (${c.symbol}) $${parseFloat(
+            c.marketCap
+          ).toLocaleString()} MCap ${change}`;
+        }
+      );
 
-    const message = `📊 *Hourly Market Update*\n_Updated: ${dayjs
-      .utc()
-      .format("D MMM YY, h:mm A [UTC]")}_
+      const message = `📊 *Hourly Market Update*\n_Updated: ${dayjs
+        .utc()
+        .format("D MMM YY, h:mm A [UTC]")}_
 
 🚀 *Top Gainers*  
-${formatGainers?.join("\n") || "No data available"}
+${formattedGainers?.join("\n") || "No data available"}
 
 💸 *Top Volume*  
-${formatVolume?.join("\n") || "No data available"}
+${formattedTopVolumes?.join("\n") || "No data available"}
 
 🏆 *Most Valuable*  
-${formatValuable?.join("\n") || "No data available"}
+${formattedMostValuables?.join("\n") || "No data available"}
 
 🆕 *New Coins*  
-${formatNew?.join("\n") || "No data available"}
+${formattedNewest?.join("\n") || "No data available"}
 
 ⏱️ *Last Traded*  
-${formatTraded?.join("\n") || "No data available"}
+${formattedLastTraded?.join("\n") || "No data available"}
 `;
 
-    await bot.api.sendMessage(TELEGRAM_CHANNEL_ID, message, {
-      parse_mode: "Markdown"
-    });
+      await bot.api.sendMessage(TELEGRAM_CHANNEL_ID, message, {
+        parse_mode: "Markdown"
+      });
 
-    console.log("Hourly update sent to channel.");
-  } catch (err) {
-    console.error("❌ Error during hourly update:", err);
-  }
-});
+      console.log("Hourly market update sent to channel.");
+    } catch (err) {
+      console.error("❌ Error sending hourly market update:", err);
+    }
+  },
+  { timezone: "America/New_York" }
+);
 
 // Handle the /ping command.
 bot.command("ping", (ctx) => {
