@@ -91,22 +91,22 @@ cron.schedule("0 * * * *", async () => {
 
     const message = `📊 *Hourly Market Update*\n_Updated: ${dayjs
       .utc()
-      .format("D MMM, h:mm A [UTC]")}_
+      .format("D MMM YY, h:mm A [UTC]")}_
 
-🚀 *Top Gainers (24h)*  
-${formatGainers?.join("\n")}
+🚀 *Top Gainers*  
+${formatGainers?.join("\n") || "No data available"}
 
-💸 *Top Volume (24h)*  
-${formatVolume?.join("\n")}
+💸 *Top Volume*  
+${formatVolume?.join("\n") || "No data available"}
 
 🏆 *Most Valuable*  
-${formatValuable?.join("\n")}
+${formatValuable?.join("\n") || "No data available"}
 
 🆕 *New Coins*  
-${formatNew?.join("\n")}
+${formatNew?.join("\n") || "No data available"}
 
 ⏱️ *Last Traded*  
-${formatTraded?.join("\n")}
+${formatTraded?.join("\n") || "No data available"}
 `;
 
     await bot.api.sendMessage(TELEGRAM_CHANNEL_ID, message, {
